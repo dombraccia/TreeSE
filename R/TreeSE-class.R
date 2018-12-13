@@ -1,11 +1,11 @@
 
-#' TreeSE class wrapper for SummarizedExperiment objects
+#' TreeSummarizedExperiment class wrapper for SummarizedExperiment objects
 #' @import SummarizedExperiment
-setClass("TreeSE",
+setClass("TreeSummarizedExperiment",
          contains = "SummarizedExperiment")
 
 # validity
-setValidity("TreeSE", function(object) {
+setValidity("TreeSummarizedExperiment", function(object) {
   msg <- NULL
   if(!(is(rowData(object), "TreeIndex") || is(colData(object), "TreeIndex"))) {
      msg <- "neither rowData nor colData are TreeIndex objects, use SummarizedExperiment instead."
@@ -14,7 +14,7 @@ setValidity("TreeSE", function(object) {
   if(is.null(msg)) TRUE else msg
 })
 
-#' The TreeSE class.
+#' The TreeSummarizedExperiment class.
 #'
 #' SummarizedExperiment-like class for datasets that have hierarchies on either rowData or colData.
 #' For microbiome data, rowData is a tree hierarchy
@@ -23,26 +23,26 @@ setValidity("TreeSE", function(object) {
 #' @param rowData rowData
 #' @param colData colData
 #' @param ... other parameters for SummarizedExperiment
+#' @importFrom S4Vectors SimpleList
+#' @importFrom S4Vectors DataFrame
+#' @importFrom methods new
 #' @export
-TreeSE <- function(assays = SimpleList(),
+TreeSummarizedExperiment <- function(assays = SimpleList(),
                    rowData = NULL,
                    colData = NULL,
                    ...) {
-  sumExp <- SummarizedExperiment(assays = assays, ...)
 
-  if (!missing(rowData) && !is.null(rowData)) {
-    rowData(sumExp) <- rowData
+  if (missing(colData) || is.null(colData)) {
+    assay <- assays[[1]]
+    colData <- DataFrame(x=seq_len(ncol(assay)), row.names=colnames(assay))[, FALSE]
   }
 
-  if (!missing(colData) && !is.null(colData)) {
-    colData(sumExp) <- colData
+  sumExp <- SummarizedExperiment(assays = assays, rowData = rowData, colData = colData, ...)
 
-  }
-
-  new("TreeSE", sumExp)
+  new("TreeSummarizedExperiment", sumExp)
 }
 
-#' Import `Seurat` and `Clustree` into `TreeSE`
+#' Import `Seurat` and `Clustree` into `TreeSummarizedExperiment`
 #'
 #' @param seurat seurat object that contains rowData
 #' @param cluster_names sluter names from seurat if different from standard
@@ -82,7 +82,7 @@ ImportFromSeurat <- function(seurat, clustree, cluster_names = NULL) {
   tree <- TreeIndex(clusters, cluster_names)
   rownames(tree) <- colnames(seurat@data)
 
-  TreeSE(SimpleList(counts = seurat@data), colData = tree)
+  TreeSummarizedExperiment(SimpleList(counts = seurat@data), colData = tree)
 }
 
 
